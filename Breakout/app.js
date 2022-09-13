@@ -1,108 +1,151 @@
-const canvas = document.getElementById("breakout");
-const ctx = canvas.getContext("2d");
-document.addEventListener("keydown", keyDownHandler);
-document.addEventListener("keyup", keyUpHandler);
-document.addEventListener("mousemove", mouseMoveHandler);
+let ball;
+let paddle;
+let bricks;
+let scoreText;
+let livesText;
+let startButton;
+let rotation;
+let gameOverText;
+let wonTheGameText;
 
-let game = {
-	requestId: null,
-	timeoutId: null,
-	leftKey: false,
-	rightKey: false,
-	on: false,
+let score = 0;
+let lives = 3;
+
+const textStyle = {
+	font: "bold 18px Arial",
+	fill: "#FFF",
 };
 
-let paddle = {
-	height: 50,
-	width: 100,
-	get y() {
-		return canvas.height - this.height;
+const config = {
+	type: Phaser.AUTO,
+	width: window.innerWidth,
+	height: window.innerHeight,
+	backgroundColor: "#222",
+	physics: {
+		default: "arcade",
+		arcade: {
+			// debug: true,
+			checkCollision: {
+				up: true,
+				down: false,
+				left: true,
+				right: true,
+			},
+		},
+	},
+	scene: {
+		preload,
+		create,
+		update,
 	},
 };
-let ball = {
-	radius: 10,
-};
-let block = {
-	rows: 5,
-	cols: 10,
-	get width() {
-		return canvas.width / this.cols;
-	},
-	height: 30,
-};
-let images = {
-	background: new Image(),
-	ball: new Image(),
-	paddle: new Image(),
-};
-function onImageLoad(evt) {
-	resetGame();
-	createblocks();
-	resetPaddle();
-	paint();
-	ctx.font = "50px ArcadeClassic";
-	ctx.fillStyle = "lime";
-	ctx.fillText("PRESS START", canvas.width / 2 - 120, canvas.height / 2);
-}
-images.background.addEventListener("load", onImageLoad);
-images.background.src = "./images/background2.png";
-images.ball.src = "./images/ball.png";
-images.paddle.src = "./images/paddle.png";
 
-let blockItems = [];
+const game = new Phaser.Game(config);
 
-function play() {
-	cancelAnimationFrame(game.requestId);
-	clearTimeout(game.timeoutId);
-	game.on = true;
-	resetGame();
-	resetBall();
-	resetPaddle();
-	createblocks();
-	animate();
+function preload() {
+	this.load.image("paddle", "images/paddle.png");
+	this.load.image("brick", "images/block2.png");
+	this.load.image("destroyed", "images/destroyed.png");
+	this.load.image("ball", "images/ball.png");
 }
 
-function resetGame() {
-	game.speed = 7;
-	game.score = 0;
-	game.level = 1;
-	game.lives = 3;
-	game.time = { start: performance.now(), elapsed: 0, refreshRate: 16 };
+function create() {
+	paddle = this.physics.add.image(this.cameras.main.centerX, this.game.config.height - 50, "paddle").setImmovable();
+
+	ball = this.physics.add.image(this.cameras.main.centerX, this.game.config.height - 100, "ball")
+		.setCollideWorldBounds(true)
+		.setBounce(1);
+
+	bricks = this.physics.add.staticGroup({
+		key: "brick",
+		frameQuantity: 20,
+		gridAlign: {
+			width: 10,
+			cellWidth: 60,
+			cellHeight: 60,
+			x: this.cameras.main.centerX - 277.5,
+			y: 100,
+		},
+	});
+
+	scoreText = this.add.text(20, 20, "Score: 0", textStyle);
+	livesText = this.add
+		.text(this.game.config.width - 20, 20, "Lives: " + lives, textStyle)
+		.setOrigin(1, 0);
+
+	gameOverText = this.add
+		.text(
+			this.cameras.main.centerX,
+			this.cameras.main.centerY,
+			"Game over!",
+			textStyle
+		)
+		.setOrigin(0.5)
+		.setPadding(10)
+		.setStyle({ backgroundColor: "#111", fill: "#e74c3c" })
+		.setVisible(false);
+
+	wonTheGameText = this.add.text(this.cameras.main.centerX, this.cameras.main.centerY, "You won the game!", textStyle)
+		.setOrigin(0.5)
+		.setPadding(10)
+		.setStyle({ backgroundColor: "#111", fill: "#27ae60" })
+		.setVisible(false);
+
+	startButton = this.add
+		.text(
+			this.cameras.main.centerX,
+			this.cameras.main.centerY,
+			"Start game",
+			textStyle
+		)
+		.setOrigin(0.5)
+		.setPadding(10)
+		.setStyle({ backgroundColor: "#111" })
+		.setInteractive({ useHandCursor: true })
+		.on("pointerdown", () => startGame.call(this))
+		.on("pointerover", () => startButton.setStyle({ fill: "#f39c12" }))
+		.on("pointerout", () => startButton.setStyle({ fill: "#FFF" }));
+
+	this.physics.add.collider(ball, bricks, brickHit, null, this);
+	this.physics.add.collider(ball, paddle, paddleHit, null, this);
 }
 
-function resetBall() {
-	ball.x = canvas.width / 2;
-	ball.y = canvas.height - paddle.height - 2 * ball.radius;
-	ball.dx = game.speed * (Math.random() * 2 - 1); // Random trajectory
-	ball.dy = -game.speed; // Up
-}
+function update() {
+	if (rotation) {
+		ball.rotation =
+			rotation === "left" ? ball.rotation - 0.05 : ball.rotation + 0.02;
+	}
 
-function resetPaddle() {
-	paddle.x = (canvas.width - paddle.width) / 2;
-	paddle.dx = game.speed + 7;
-}
+	if (ball.y > paddle.y) {
+		lives--;
 
-function createblocks() {
-	blockItems = [];
-	const topMargin = 30;
-	const colors = ["red", "orange", "yellow", "blue", "green"];
-	const blockImages = [
-		(images.block.src = "./images/block.png"),
-		(images.destroyed.src = "./images/destroyed.png"),
-	];
+		if (lives > 0) {
+			livesText.setText(`Lives: ${lives}`);
 
-	for (let row = 0; row < block.rows; row++) {
-		for (let col = 0; col < block.cols; col++) {
-			blockItems.push({
-				x: col * block.width,
-				y: row * block.height + topMargin,
-				height: block.height,
-				width: block.width,
-				color: colors[row],
-				image: blockImages[row],
-				points: (5 - row) * 2,
-				hitsLeft: row === 0 ? 2 : 1,
-			});
+			ball
+				.setPosition(this.cameras.main.centerX, this.game.config.height - 100)
+				.setVelocity(300, -150);
+		} else {
+			ball.destroy();
+
+			gameOverText.setVisible(true);
 		}
 	}
 }
+
+function paddleHit(ball, paddle) {
+	var diff = 0;
+
+	if (ball.x < paddle.x) {
+		diff = paddle.x - ball.x;
+		ball.setVelocityX(-20 * diff);
+		rotation = "left";
+	} else if (ball.x > paddle.x) {
+		diff = ball.x - paddle.x;
+		ball.setVelocityX(20 * diff);
+		rotation = "right";
+	} else {
+		ball.setVelocityX(2 + Math.random() * 10);
+	}
+}
+
