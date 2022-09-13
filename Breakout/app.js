@@ -149,3 +149,6 @@ function paddleHit(ball, paddle) {
 	}
 }
 
+let update = () => {
+	console.log("update");
+};
