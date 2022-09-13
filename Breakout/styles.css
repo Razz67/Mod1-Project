@@ -1,10 +1,35 @@
 * {
     padding: 0;
     margin: 0;
+    box-sizing: border-box;
 }
 
-#player1Canvas {
-    background: #eee;
-    display: block;
-    margin: 0 auto;
+.container {
+    margin-top: 100px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+#breakout {
+    background-color: #000;
+}
+
+#playButton {
+    cursor: pointer;
+    background-color: crimson;
+    color: #FFF;
+    font-weight: 700;
+    padding: 0.5em 1em;
+    border-radius: 5px;
+    box-shadow: #000;
+}
+
+#playButton:hover {
+    cursor: pointer;
+    background-color: chartreuse;
+    color: #FFF;
+    font-weight: 700;
+    padding: 0.5em 1em;
 }
