@@ -1,8 +1,3 @@
-const game = new Phaser.Game(680, 420, Phaser.AUTO, null,{
-	preload: preload, 
-	create: create, 
-	update: update
-});
 
 let ball;
 let paddle;
