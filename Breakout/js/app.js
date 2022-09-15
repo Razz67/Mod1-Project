@@ -1,6 +1,13 @@
+const game = new Phaser.Game(680, 420, Phaser.AUTO, null,{
+	preload: preload, 
+	create: create, 
+	update: update
+});
+
 let ball;
 let paddle;
 let block;
+let newBlock;
 let scoreTxt;
 let livesTxt;
 let startBtn;
@@ -16,195 +23,127 @@ const textStyle = {
 	fill: "#FFF",
 };
 
-const config = {
-	type: Phaser.AUTO,
-	width: window.innerWidth,
-	height: window.innerHeight,
-	backgroundColor: "#222",
-	physics: {
-		default: "arcade",
-		arcade: {
-			debug: false, // set to true to show the debug lines
-			checkCollision: {
-				up: true,
-				down: false,
-				left: true,
-				right: true,
-			},
-		},
-	},
-	scene: {
-		preload,
-		create,
-		update,
-	},
-};
-
-const game = new Phaser.Game(config);
 
 function preload() {
-	this.load.image("background", "images/background2.png");
-	this.load.image("paddle", "images/paddle.png");
-	this.load.image("block", "images/block.png");
-	this.load.image("destroyed", "images/destroyed.png");
-	this.load.image("ball", "images/ball.png");
+	game.load.image("background", "images/background2.png");
+	game.load.image("paddle", "images/paddle.png");
+	game.load.image("block", "images/block.png");
+	game.load.image("destroyed", "images/destroyed.png");
+	game.load.image("ball", "images/ball.png");
 }
 
 function create() {
-	this.add.image(50, 50, "background").setOrigin(0, 0);
-	paddle = this.physics.add
-		.image(this.cameras.main.centerX, this.game.config.height - 50, "paddle")
-		.setImmovable();
+	game.physics.startSystem(Phaser.Physics.ARCADE);
+    game.physics.arcade.checkCollision.down = false;
+    ball = game.add.image(game.world.width*0.5, game.world.height-25, 'ball');
+    ball.animations.add('spin', [0,1,0,2,0,1,0,2,0], 24);
+    ball.anchor.set(0.5);
+    game.physics.enable(ball, Phaser.Physics.ARCADE);
+    ball.body.velocity.set(150, -150);
+    ball.body.collideWorldBounds = true;
+    ball.body.bounce.set(1);
+    ball.checkWorldBounds = true;
+    ball.events.onOutOfBounds.add(ballOffCanvas, this);
 
-	ball = this.physics.add
-		.image(this.cameras.main.centerX, this.game.config.height - 100, "ball")
-		.setCollideWorldBounds(true)
-		.setBounce(1);
+    paddle = game.add.sprite(game.world.width*0.5, game.world.height-5, 'paddle');
+    paddle.anchor.set(0.5,1);
+    game.physics.enable(paddle, Phaser.Physics.ARCADE);
+    paddle.body.immovable = true;
 
-
-	// Add Emojies
-	block = this.physics.add.staticGroup({
+	block = game.add.group({
 		key: "block",
-		frameQuantity: 30, // determines the number of emojies added to the game
-		gridAlign: {
-			width: 10,
-			cellWidth: 60,
-			cellHeight: 60,
-			x: this.cameras.main.centerX - 277.5, y: 100,
-		},
+		repeat: 15,
+
+		setXY: { 
+			x: 12, 
+			width: 50, 
+			height: 50, 
+			y: 12 },
 	});
+	bounceY: 1;
+	collideWorldBounds: true;
 
-	scoreTxt = this.add.text(20, 20, "Score: 0", textStyle);
-	livesTxt = this.add
-		.text(this.game.config.width - 20, 20, "Lives: " + lives, textStyle)
-		.setOrigin(1, 0);
 
-	gameOvertxt = this.add
-		.text(
-			this.cameras.main.centerX,
-			this.cameras.main.centerY,
-			"Game over!",
-			textStyle,
-		)
-		.setOrigin(0.5)
-		.setPadding(10)
-		.setStyle({ backgroundColor: "#111", fill: "#e74c3c" })
-		.setVisible(false);
+    initBlock();
 
-	gameWonTxt = this.add.text(
-			this.cameras.main.centerX,
-			this.cameras.main.centerY,
-			"You won the game!",
-			textStyle
-		)
-		.setOrigin(0.5)
-		.setPadding(10)
-		.setStyle({ backgroundColor: "#111", fill: "#27ae60" })
-		.setVisible(false);
-
-	startBtn = this.add.text(this.cameras.main.centerX, this.cameras.main.centerY, "Start game", textStyle)
-		.setOrigin(0.5)
-		.setPadding(10)
-		.setStyle({ backgroundColor: "#111" })
-		.setInteractive({ useHandCursor: true })
-		.on("pointerdown", () => startGame.call(this))
-		.on("pointerover", () => startBtn.setStyle({ fill: "#f39c12" }))
-		.on("pointerout", () => startBtn.setStyle({ fill: "#FFF" }));
-
-	
-	this.physics.add.collider(ball, block, blockHit, null, this);
-	this.physics.add.collider(ball, paddle, paddleHit, null, this);
+    textStyle = { font: '18px Arial', fill: '#0095DD' };
+    scoreTxt = game.add.text(5, 5, 'Points: 0', textStyle);
+    livesTxt = game.add.text(game.world.width-5, 5, 'Lives: '+lives, textStyle);
+    livesTxt.anchor.set(1,0);
+    lifeLostText = game.add.text(game.world.width*0.5, game.world.height*0.5, 'Life lost, tap to continue', textStyle);
+    lifeLostText.anchor.set(0.5);
+    lifeLostText.visible = false;
 }
 
-function update() {
-	if (rotation) {
-		ball.rotation =	rotation === "left" ? ball.rotation - 0.05 : ball.rotation + 0.05;
-	}
+	function update() {
+		game.physics.arcade.collide(ball, paddle, ballHitPaddle);
+		game.physics.arcade.collide(ball, block, ballHitBlock);
+		paddle.x = game.input.x || game.world.width * 0.5;
+	};
 
-	if (ball.y > paddle.y) {
-		lives--;
 
-		if (lives > 0) {
-			livesTxt.setText(`Lives: ${lives}`);
-
-			ball.setPosition(this.cameras.main.centerX, this.game.config.height - 100)
-				.setVelocity(300, -150);
-		} else {
-			ball.destroy();
-
-			gameOvertxt.setVisible(true);
+	function initBlock() {
+		blockInfo = {
+			width: 50,
+			height: 50,
+			count: {
+				row: 7,
+				col: 3,
+			},
+			offset: {
+				top: 50,
+				left: 60,
+			},
+			padding: 10,
+		};
+		blocks = game.add.group();
+		for (c = 0; c < blockInfo.count.col; c++) {
+			for (r = 0; r < blockInfo.count.row; r++) {
+				var blockX =
+					r * (blockInfo.width + blockInfo.padding) + blockInfo.offset.left;
+				var blockY =
+					c * (blockInfo.height + blockInfo.padding) + blockInfo.offset.top;
+				newBlock = game.add.sprite(blockX, blockY, "block");
+				game.physics.enable(newBlock, Phaser.Physics.ARCADE);
+				newBlock.body.immovable = true;
+				newBlock.anchor.set(0.5);
+				blocks.add(newBlock);
+			}
 		}
 	}
-}
 
-function paddleHit(ball, paddle) {
-	var diff = 0;
+	function ballHitBlock(block) {
+		let killTween = game.add.tween(block.scale);
+		killTween.to({ x: 0, y: 0 }, 200, Phaser.Easing.Linear.None);
+		killTween.onComplete.addOnce(function () {
+			block.kill();
+		}, this);
 
-	if (ball.x < paddle.x) {
-		diff = paddle.x - ball.x;
-		ball.setVelocityX(-20 * diff);
-		rotation = "left";
-	} else if (ball.x > paddle.x) {
-		diff = ball.x - paddle.x;
-		ball.setVelocityX(20 * diff);
-		rotation = "right";
-	} else {
-		ball.setVelocityX(2 + Math.random() * 10); // sets a random velocity of the ball afgter it hits the paddle
+		killTween.start();
+		score += 100;
+		scoreTxt.setText("Points: " + score);
+		if (score === blockInfo.count.row * blockInfo.count.col * 10) {
+			alert("You won the game, congratulations!");
+			location.reload();
+		}
 	}
-}
 
-function blockHit(ball, block) {
-	block.setTexture("destroyed");  // changes the texture of the block to destroyed.png
-	score += 5;
-	scoreTxt.setText(`Score: ${score}`);
-
-	this.tweens.add({  // handles the animation of the block when hit
-		targets: block,
-		scaleX: 0,
-		scaleY: 0,
-		ease: "Power1",
-		duration: 500,
-		delay: 250,
-		angle: 180,
-		onComplete: () => {
-			block.destroy();
-
-			if (block.count === 0) {
-				ball.destroy();
-				gameWonTxt.setVisible(true);
-				
-			}
-		},
-	});
-}
-
-function startGame() {
-	startBtn.destroy();
-	ball.setVelocity(-300, -150);
-	rotation = "right";
-
-	this.input.on("pointermove", (pointer) => {
-		paddle.x = Phaser.Math.Clamp(
-			pointer.x,
-			paddle.width / 2,
-			this.game.config.width - paddle.width / 2
-		);
-	});
-}
-
-
-const restart = () => {
-	playAgainBtn = this.add
-					.text(
-						this.cameras.main.centerX,
-						this.cameras.main.centerY,
-						"Replay",
-						textStyle
-					)
-					.setOrigin(-6, 0.5)
-					.setPadding(10)
-					.setStyle({ backgroundColor: "#111" })
-					.setInteractive({ useHandCursor: true })
-					.on("pointerdown", () => startGame.call(this))
-					.on("pointerover", () => playAgainBtn.setStyle({ fill: "#f39c12" }))
-					.on("pointerout", () => playAgainBtn.setStyle({ fill: "#FFF" }));
+	function ballOffCanvas() {
+		lives--;
+		if (lives) {
+			livesTxt.setText("Lives: " + lives);
+			lifeLostText.visible = true;
+			ball.reset(game.world.width * 0.5, game.world.height - 25);
+			paddle.reset(game.world.width * 0.5, game.world.height - 5);
+			game.input.onDown.addOnce(function () {
+				lifeLostText.visible = false;
+				ball.body.velocity.set(150, -150);
+			}, this);
+		} else {
+			alert("You lost, game over!");
+			location.reload();
+		}
+	}
+	function ballHitPaddle(ball, paddle) {
+		ball.animations.play("spin");
+	}
