@@ -84,15 +84,14 @@ function create() {
 			this.cameras.main.centerX,
 			this.cameras.main.centerY,
 			"Game over!",
-			textStyle
+			textStyle,
 		)
 		.setOrigin(0.5)
 		.setPadding(10)
 		.setStyle({ backgroundColor: "#111", fill: "#e74c3c" })
 		.setVisible(false);
 
-	gameWonTxt = this.add
-		.text(
+	gameWonTxt = this.add.text(
 			this.cameras.main.centerX,
 			this.cameras.main.centerY,
 			"You won the game!",
@@ -103,8 +102,7 @@ function create() {
 		.setStyle({ backgroundColor: "#111", fill: "#27ae60" })
 		.setVisible(false);
 
-	startBtn = this.add
-		.text(this.cameras.main.centerX, this.cameras.main.centerY, "Start game", textStyle)
+	startBtn = this.add.text(this.cameras.main.centerX, this.cameras.main.centerY, "Start game", textStyle)
 		.setOrigin(0.5)
 		.setPadding(10)
 		.setStyle({ backgroundColor: "#111" })
@@ -113,14 +111,14 @@ function create() {
 		.on("pointerover", () => startBtn.setStyle({ fill: "#f39c12" }))
 		.on("pointerout", () => startBtn.setStyle({ fill: "#FFF" }));
 
+	
 	this.physics.add.collider(ball, block, blockHit, null, this);
 	this.physics.add.collider(ball, paddle, paddleHit, null, this);
 }
 
 function update() {
 	if (rotation) {
-		ball.rotation =
-			rotation === "left" ? ball.rotation - 0.05 : ball.rotation + 0.05;
+		ball.rotation =	rotation === "left" ? ball.rotation - 0.05 : ball.rotation + 0.05;
 	}
 
 	if (ball.y > paddle.y) {
@@ -129,8 +127,7 @@ function update() {
 		if (lives > 0) {
 			livesTxt.setText(`Lives: ${lives}`);
 
-			ball
-				.setPosition(this.cameras.main.centerX, this.game.config.height - 100)
+			ball.setPosition(this.cameras.main.centerX, this.game.config.height - 100)
 				.setVelocity(300, -150);
 		} else {
 			ball.destroy();
@@ -172,9 +169,10 @@ function blockHit(ball, block) {
 		onComplete: () => {
 			block.destroy();
 
-			if (block.countActive() == 0) {
+			if (block.count === 0) {
 				ball.destroy();
 				gameWonTxt.setVisible(true);
+				
 			}
 		},
 	});
@@ -193,3 +191,20 @@ function startGame() {
 		);
 	});
 }
+
+
+const restart = () => {
+	playAgainBtn = this.add
+					.text(
+						this.cameras.main.centerX,
+						this.cameras.main.centerY,
+						"Replay",
+						textStyle
+					)
+					.setOrigin(-6, 0.5)
+					.setPadding(10)
+					.setStyle({ backgroundColor: "#111" })
+					.setInteractive({ useHandCursor: true })
+					.on("pointerdown", () => startGame.call(this))
+					.on("pointerover", () => playAgainBtn.setStyle({ fill: "#f39c12" }))
+					.on("pointerout", () => playAgainBtn.setStyle({ fill: "#FFF" }));
