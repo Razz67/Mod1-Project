@@ -1,72 +1,34 @@
-* {
-    padding: 0;
-    margin: 0;
-    box-sizing: border-box;
-}
-
-
 .container {
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    align-items: center;
+}
+
+.canvas {
+    position: absolute;
+    width: 540px;
+    height: 380px;
+    border: solid 1px black;
     margin-top: 50px;
 }
-
-
-#canvas {
-    position: relative;
-    width: 560px;
-    min-height: 300px;
-    /* background-image: url(images/background2.2.png);
-    background-repeat: no-repeat;
-    background-color: chartreuse; */
-    border: 1px solid black;
-}
-
-.emoji {
-    width: 50px;
-    height: 50px;
-    background-image: url("images/block.png");
-    background-color: yellow;
-}
-
 
 .paddle {
     position: absolute;
     width: 100px;
     height: 20px;
-    background-image: url(images/paddle.png);
     background-color: blueviolet;
 }
 
+.emoji {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    background-image: url(images/block.png);
+}
 
 .ball {
     position: absolute;
-    width: 40px;
-    height: 40px;
-    background-image: url(images/ball.png);
-    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    background-color: red;
 }
-
-
-
-
-#play {
-    cursor: pointer;
-    margin-top: 20px;
-    background-color: crimson;
-    color: #FFF;
-    font-weight: 700;
-    padding: 0.5em 1em;
-    border-radius: 5px;
-    box-shadow: #000;
-}
-
-#play:hover {
-    cursor: pointer;
-    background-color: chartreuse;
-    color: #FFF;
-    font-weight: 700;
-    padding: 0.5em 1em;
-} 
