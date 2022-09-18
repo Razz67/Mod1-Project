@@ -1,7 +1,6 @@
 const canvas = document.querySelector(".canvas");
 
 let score = 0;
-
 const scoreDisplay = document.querySelector('#score');
 
 const canvasWidth = 540;
@@ -139,6 +138,30 @@ function checkCollisions() {
 
     // Emoji Collisions
     for (let i = 0; i < emojis.length; i++) {
+		if (
+			(ballCurrentPosition[0] > emojis[i].bottomLeft[0] &&
+			ballCurrentPosition[0] < emojis[i].bottomRight[0]) &&
+			((ballCurrentPosition[1] + ballDiameter) > emojis[i].bottomLeft[1]) &&
+			ballCurrentPosition[1] < emojis[i].topLeft[1]) {
+
+			const allEmoji = Array.from(document.querySelectorAll(".emoji"));
+			allEmoji[i].classList.remove("emoji");
+			emojis.splice(i, 1);
+			changeDirection();
+			score++;
+			scoreDisplay.innerHTML = `Score: ${score}`;
+		}
+	}
+
+	// Paddle Collisions
+	if (
+		(ballCurrentPosition[0] > currentPosition[0] &&
+		(ballCurrentPosition[0] < currentPosition[0] + emojiWidth) &&
+		ballCurrentPosition[1] > currentPosition[1] &&
+		ballCurrentPosition[1] < currentPosition[1] + emojiHeight)
+	) {
+		changeDirection();
+	}
         
 
 
@@ -151,7 +174,6 @@ function checkCollisions() {
         document.removeEventListener("mousemove", onMouseMove);
     }
 }
-           
 
 // Change ball direction
   function changeDirection() {
